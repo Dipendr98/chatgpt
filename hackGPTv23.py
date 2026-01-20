@@ -8,19 +8,20 @@ from dotenv import load_dotenv, set_key
 import pandas as pd
 import os
 import csv
-import openai
+from openai import OpenAI
 import time
 import altair as alt
 
 
 load_dotenv('.env')
-openai.api_key = os.environ.get('OPENAI_API_KEY')
+api_key = os.environ.get('OPENAI_API_KEY')
 
-if not openai.api_key:
-    openai.api_key = st.text_input("Enter OPENAI_API_KEY API key")
-    set_key('.env', 'OPENAI_API_KEY', openai.api_key)
+if not api_key:
+    api_key = st.text_input("Enter OPENAI_API_KEY API key")
+    set_key('.env', 'OPENAI_API_KEY', api_key)
 
-os.environ['OPENAI_API_KEY'] = openai.api_key
+os.environ['OPENAI_API_KEY'] = api_key
+client = OpenAI(api_key=api_key)
 st.set_page_config(page_title="𝚑𝚊𝚌𝚔🅶🅿🆃", page_icon="https://raw.githubusercontent.com/NoDataFound/hackGPT/main/res/hackgpt_fav.png", layout="wide")
 # Define the chat history data as a Pandas DataFrame
 
@@ -157,7 +158,7 @@ def get_ai_response(text_input):
     messages = [{'role': 'system', 'content': 'You are a helpful assistant.'},
                 {'role': 'user', 'content': text_input+persona_text}]
 
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model=MODEL,
         messages=messages,
         temperature=temperature,
@@ -167,10 +168,10 @@ def get_ai_response(text_input):
         presence_penalty=0.6,
         stop=[" Human:", " AI:"]
     )
-    return response['choices'][0]['message']['content']
+    return response.choices[0].message.content
 
 def add_text(text_input):
-    response = openai.Completion.create(
+    response = client.completions.create(
         model=MODEL,
         prompt=str(persona_text) + text_input,
         temperature=temperature,
@@ -180,7 +181,7 @@ def add_text(text_input):
         presence_penalty=0,
         stop=["\"\"\""]
         )
-    return response['choices'][0]['text']
+    return response.choices[0].text
 
 try:
     if st.session_state.chat_history == 0 :
