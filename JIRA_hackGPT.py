@@ -4,17 +4,12 @@ from dotenv import load_dotenv
 import sys
 import fade
 from pathlib import Path
-import openai
+from openai import OpenAI
 from time import sleep
 import os
-import fade
-from pathlib import Path
-import openai
 import requests
 import urllib.parse
 import urllib.request
-import openai
-from dotenv import load_dotenv
 import gradio as gr
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -30,7 +25,6 @@ from jira import JIRA
 load_dotenv(".env")
 apiToken = os.environ.get('OPENAI_TOKEN')
 jira_token = os.environ.get('JIRA_TOKEN')
-openai.api_key = apiToken
 
 
 if 'OPENAI_TOKEN' in os.environ:
@@ -80,6 +74,10 @@ if 'OPENAI_TOKEN' in os.environ:
 else:
     os.environ['OPENAI_TOKEN'] = input('Enter API Key: ').replace(" ","")
 token = os.environ.get("OPENAI_TOKEN")
+
+# Initialize OpenAI client
+client = OpenAI(api_key=token)
+
 hack=  "\n"*7 + r""" 
 
 
@@ -128,9 +126,8 @@ for issue in issues:
     print(des_summary.rstrip('\n'))
     print(description)
     prompt = f"Fix the following issue: {issue.fields.description}"
-    model_engine = "davinci"
-    completions = openai.Completion.create(
-        engine=model_engine,
+    completions = client.completions.create(
+        model="gpt-3.5-turbo-instruct",
         prompt=prompt,
         max_tokens=1024,
         n=1,
