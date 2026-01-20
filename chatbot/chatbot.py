@@ -1,5 +1,5 @@
 import os
-import openai
+from openai import OpenAI
 import json
 from dotenv import load_dotenv, set_key
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -7,13 +7,13 @@ from slack import WebClient
 from slack_bolt import App
 
 load_dotenv('.env')
-openai.api_key = os.environ.get('OPENAI_API_KEY')
+openai_api_key = os.environ.get('OPENAI_API_KEY')
 slack_bot_token = os.environ.get('SLACK_BOT_TOKEN')
 slack_app_token = os.environ.get('SLACK_APP_TOKEN')
 
-if not openai.api_key:
-    openai.api_key = input("Enter OPENAI_API_KEY API key")
-    set_key('.env', 'OPENAI_API_KEY', openai.api_key)
+if not openai_api_key:
+    openai_api_key = input("Enter OPENAI_API_KEY API key")
+    set_key('.env', 'OPENAI_API_KEY', openai_api_key)
 
 if not slack_bot_token:
     slack_bot_token = input("Enter SLACK_BOT_TOKEN")
@@ -25,7 +25,10 @@ if not slack_app_token:
 
 os.environ['SLACK_BOT_TOKEN'] = slack_bot_token
 os.environ['SLACK_APP_TOKEN'] = slack_app_token
-os.environ['OPENAI_API_KEY'] = openai.api_key
+os.environ['OPENAI_API_KEY'] = openai_api_key
+
+# Initialize OpenAI client
+openai_client = OpenAI(api_key=openai_api_key)
 
 app = App(token=slack_bot_token)
 client = WebClient(slack_bot_token)
@@ -117,19 +120,20 @@ def handle_message_events(ack, body, logger):
             text="Pick a persona from the dropdown list"
         )
     else:
-        response = openai.Completion.create(
-            engine="text-davinci-003",
+        completion = openai_client.completions.create(
+            model="gpt-3.5-turbo-instruct",
             prompt=prompt,
             max_tokens=1024,
             n=1,
             stop=None,
             temperature=1.0
-        ).choices[0].text
+        )
+        response_text = completion.choices[0].text
 
         response = client.chat_postMessage(
             channel=body["event"]["channel"],
             thread_ts=body["event"]["event_ts"],
-            text=f"Here you go: \n{response}"
+            text=f"Here you go: \n{response_text}"
         )
 
 @app.action("static_select-action")
@@ -141,19 +145,20 @@ def handle_static_select_action(ack, body, logger):
     prompt = message_text[prompt_start_index:].strip()
     prompt_with_persona = selected_option_value + prompt
 
-    response = openai.Completion.create(
-        engine="text-davinci-003",
+    completion = openai_client.completions.create(
+        model="gpt-3.5-turbo-instruct",
         prompt=prompt_with_persona,
         max_tokens=1024,
         n=1,
         stop=None,
         temperature=1.0
-    ).choices[0].text
+    )
+    response_text = completion.choices[0].text
 
     response = client.chat_postMessage(
         channel=body["channel"]["id"],
         thread_ts=body["message"]["thread_ts"],
-        text=f"Here you go:\n{response}"
+        text=f"Here you go:\n{response_text}"
     )
 
 

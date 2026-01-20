@@ -6,17 +6,12 @@ from dotenv import load_dotenv
 import sys
 import fade
 from pathlib import Path
-import openai
+from openai import OpenAI
 from time import sleep
 import os
-import fade
-from pathlib import Path
-import openai
 import requests
 import urllib.parse
 import urllib.request
-import openai
-from dotenv import load_dotenv
 import gradio as gr
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -35,7 +30,6 @@ from prettytable import from_csv
 
 load_dotenv(".env")
 apiToken = os.environ.get('OPENAI_TOKEN')
-openai.api_key = apiToken
 
 if 'OPENAI_TOKEN' in os.environ:
    pass
@@ -94,6 +88,10 @@ if 'OPENAI_TOKEN' in os.environ:
 else:
     os.environ['OPENAI_TOKEN'] = input('Enter API Key: ').replace(" ","")
 token = os.environ.get("OPENAI_TOKEN")
+
+# Initialize OpenAI client
+client = OpenAI(api_key=token)
+
 hack=  "\n"*7 + r""" 
 
 
@@ -182,8 +180,8 @@ elif hackgpt_persona =='DAN':
 #                f.close()
 #
 def add_text(state, text):
-    response = openai.Completion.create(
-        model="text-davinci-003",
+    response = client.completions.create(
+        model="gpt-3.5-turbo-instruct",
         prompt=str(hackGPT_mode) + str(text),
         temperature=0,
         max_tokens=3000,
@@ -192,13 +190,13 @@ def add_text(state, text):
         presence_penalty=0,
         stop=["\"\"\""]
         )
-    response = response['choices'][0]['text']
-    state = state + [(str(response),str(text))]
+    response_text = response.choices[0].text
+    state = state + [(str(response_text),str(text))]
 
-    try: 
+    try:
         with open('output/chat_hackGPT_log.csv', 'a+', encoding='UTF8', newline='') as f:
             w = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            w.writerow([date_string, hackgpt_persona, str(text).strip('\n'), str(response).lstrip('\n')])
+            w.writerow([date_string, hackgpt_persona, str(text).strip('\n'), str(response_text).lstrip('\n')])
             f.close()
 
     finally:
@@ -206,8 +204,8 @@ def add_text(state, text):
 def add_file(file_state, file):
     with open(file.name, 'r') as targets:
         search = targets.read()
-        response = openai.Completion.create(
-            model="text-davinci-003",
+        response = client.completions.create(
+            model="gpt-3.5-turbo-instruct",
             prompt=str(search)+"\n",
             temperature=0,
             max_tokens=3000,
@@ -216,15 +214,15 @@ def add_file(file_state, file):
             presence_penalty=0,
             stop=["\"\"\""]
             )
-        
-    file_response = response['choices'][0]['text']
+
+    file_response = response.choices[0].text
     file_state = file_state + [("" + str(file_response), "Processed file: "+ str(file.name))]
     try:
         with open('output/chat_hackGPT_file_log.csv', 'a+', encoding='UTF8', newline='') as f:
             w = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            w.writerow([date_string, hackgpt_persona, str(search).strip('\n'), str(response).lstrip('\n')])
+            w.writerow([date_string, hackgpt_persona, str(search).strip('\n'), str(file_response).lstrip('\n')])
             f.close()
-    
+
     finally:
         return file_state, file_state
             

@@ -8,7 +8,7 @@ from dotenv import load_dotenv, set_key
 import pandas as pd
 import os
 import csv
-import openai
+from openai import OpenAI
 from bs4 import BeautifulSoup
 from datetime import datetime
 
@@ -16,13 +16,16 @@ from datetime import datetime
 
 
 load_dotenv('.env')
-openai.api_key = os.environ.get('OPENAI_API_KEY')
+openai_api_key = os.environ.get('OPENAI_API_KEY')
 
-if not openai.api_key:
-    openai.api_key = st.text_input("Enter OPENAI_API_KEY API key")
-    set_key('.env', 'OPENAI_API_KEY', openai.api_key)
+if not openai_api_key:
+    openai_api_key = st.text_input("Enter OPENAI_API_KEY API key")
+    set_key('.env', 'OPENAI_API_KEY', openai_api_key)
 
-os.environ['OPENAI_API_KEY'] = openai.api_key
+os.environ['OPENAI_API_KEY'] = openai_api_key
+
+# Initialize OpenAI client
+openai_client = OpenAI(api_key=openai_api_key)
 
 st.set_page_config(page_title="Welcome to 𝚑𝚊𝚌𝚔𝚎𝚛🅿🅰🆁🅴🅽🆃🆂", page_icon="https://raw.githubusercontent.com/NoDataFound/hackGPT/main/res/hackgpt_fav.png", layout="wide")
 st.header("Welcome to 𝚑𝚊𝚌𝚔𝚎𝚛🅿🅰🆁🅴🅽🆃🆂")
@@ -168,8 +171,8 @@ if user_input and selected_persona:
 
 prompt = f"Based on {persona_text}  check against  {options_text} and return a response for {' '.join([f'{m[0]}: {m[1]}' for m in chat_history])}.  "
 
-completions = openai.Completion.create(
-    engine="text-davinci-003",
+completions = openai_client.completions.create(
+    model="gpt-3.5-turbo-instruct",
     prompt=prompt,
     max_tokens=1024,
     n=1,
