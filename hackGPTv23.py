@@ -14,11 +14,23 @@ import altair as alt
 
 
 load_dotenv('.env')
-api_key = os.environ.get('OPENAI_API_KEY')
+stored_api_key = os.environ.get('OPENAI_API_KEY')
+
+api_key_input = st.sidebar.text_input(
+    "OpenAI API key",
+    value=stored_api_key or "",
+    type="password",
+    help="Enter your OpenAI API key. You can override the saved key at any time.",
+)
+save_api_key = st.sidebar.checkbox("Save API key to .env", value=False)
+
+api_key = api_key_input.strip()
+if save_api_key and api_key:
+    set_key('.env', 'OPENAI_API_KEY', api_key)
 
 if not api_key:
-    api_key = st.text_input("Enter OPENAI_API_KEY API key")
-    set_key('.env', 'OPENAI_API_KEY', api_key)
+    st.sidebar.error("Please enter a valid OpenAI API key to continue.")
+    st.stop()
 
 os.environ['OPENAI_API_KEY'] = api_key
 client = OpenAI(api_key=api_key)
